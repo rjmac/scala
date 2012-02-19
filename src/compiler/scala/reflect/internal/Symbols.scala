@@ -1023,8 +1023,11 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     /** Modifies this symbol's info in place. */
     def modifyInfo(f: Type => Type): this.type              = setInfo(f(info))
     /** Substitute second list of symbols for first in current info. */
-    def substInfo(syms0: List[Symbol], syms1: List[Symbol]) = modifyInfo(_.substSym(syms0, syms1))
-    def setInfoOwnerAdjusted(info: Type): this.type         = setInfo(info atOwner this)
+    def substInfo(syms0: List[Symbol], syms1: List[Symbol]): this.type =
+      if (syms0.isEmpty) this
+      else modifyInfo(_.substSym(syms0, syms1))
+
+    def setInfoOwnerAdjusted(info: Type): this.type = setInfo(info atOwner this)
     
     /** Set the info and enter this symbol into the owner's scope. */
     def setInfoAndEnter(info: Type): this.type = {
@@ -1578,6 +1581,10 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
       else if (isMethod || isClass) this
       else owner.logicallyEnclosingMember
 
+    /** Kept for source compatibility with 2.9. Scala IDE for Eclipse relies on this. */
+    @deprecated("Use enclosingTopLevelClass")
+    def toplevelClass: Symbol = enclosingTopLevelClass
+      
     /** The top-level class containing this symbol. */
     def enclosingTopLevelClass: Symbol =
       if (owner.isPackageClass) {
@@ -1700,6 +1707,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
      *     (which is always the interface, by convention)
      *   - before erasure, it looks up the interface name in the scope of the owner of the class.
      *     This only works for implementation classes owned by other classes or traits.
+     *     !!! Why?
      */
     final def toInterface: Symbol =
       if (isImplClass) {
@@ -2076,6 +2084,8 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     def infosString = infos.toString()
 
+    def debugLocationString = fullLocationString + " " + debugFlagString
+    def debugFlagString = hasFlagsToString(-1L)
     def hasFlagsToString(mask: Long): String = flagsToString(
       flags & mask,
       if (hasAccessBoundary) privateWithin.toString else ""
@@ -2174,7 +2184,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     }
 
     def setLazyAccessor(sym: Symbol): TermSymbol = {
-      assert(isLazy && (referenced == NoSymbol || referenced == sym), (this, hasFlagsToString(-1L), referenced, sym))
+      assert(isLazy && (referenced == NoSymbol || referenced == sym), (this, debugFlagString, referenced, sym))
       referenced = sym
       this
     }
@@ -2315,7 +2325,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
 
     /** Overridden in subclasses for which it makes sense.
      */
-    def existentialBound: Type = abort("unexpected type: "+this.getClass+ " "+this.fullLocationString+ " " + hasFlagsToString(-1L))
+    def existentialBound: Type = abort("unexpected type: "+this.getClass+ " "+debugLocationString)
 
     override def name: TypeName = super.name.asInstanceOf[TypeName]
     final override def isType = true
@@ -2323,7 +2333,7 @@ trait Symbols extends api.Symbols { self: SymbolTable =>
     override def isAbstractType = {
       if (settings.debug.value) {
         if (isDeferred) {
-          println("TypeSymbol claims to be abstract type: " + this.getClass + " " + hasFlagsToString(-1L) + " at ")
+          println("TypeSymbol claims to be abstract type: " + this.getClass + " " + debugFlagString + " at ")
           (new Throwable).printStackTrace
         }
       }
