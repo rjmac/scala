@@ -99,6 +99,7 @@ trait StdNames extends NameManglers { self: SymbolTable =>
     val MODULE_VAR_SUFFIX: NameType  = "$module"
     val ROOT: NameType               = "<root>"
     val PACKAGE: NameType            = "package"
+    val SPECIALIZED_SUFFIX: NameType = "$sp"
 
     // value types (and AnyRef) are all used as terms as well
     // as (at least) arguments to the @specialize annotation.
@@ -152,6 +153,9 @@ trait StdNames extends NameManglers { self: SymbolTable =>
     final val Annotation: NameType          = "Annotation"
     final val ClassfileAnnotation: NameType = "ClassfileAnnotation"
     final val Enum: NameType                = "Enum"
+
+    final val Tree: NameType             = "Tree"
+    final val TypeTree: NameType         = "TypeTree"
 
     // Annotation simple names, used in Namer
     final val BeanPropertyAnnot: NameType = "BeanProperty"
@@ -304,8 +308,6 @@ trait StdNames extends NameManglers { self: SymbolTable =>
     val classOf: NameType              = "classOf"
     val clone_ : NameType              = if (forMSIL) "MemberwiseClone" else "clone" // sn.OClone causes checkinit failure
     val conforms: NameType             = "conforms"
-    val context : NameType             = "_context"
-    val contextImplicit : NameType     = "$context"
     val copy: NameType                 = "copy"
     val delayedInit: NameType          = "delayedInit"
     val delayedInitArg: NameType       = "delayedInit$body"
@@ -329,6 +331,7 @@ trait StdNames extends NameManglers { self: SymbolTable =>
     val freeValue : NameType           = "freeValue"
     val genericArrayOps: NameType      = "genericArrayOps"
     val get: NameType                  = "get"
+    val getOrElse: NameType            = "getOrElse"
     val hasNext: NameType              = "hasNext"
     val hashCode_ : NameType           = if (forMSIL) "GetHashCode" else "hashCode"
     val hash_ : NameType               = "hash"
@@ -346,6 +349,8 @@ trait StdNames extends NameManglers { self: SymbolTable =>
     val lengthCompare: NameType        = "lengthCompare"
     val lift_ : NameType               = "lift"
     val macro_ : NameType              = "macro"
+    val macroThis : NameType           = "_this"
+    val macroContext : NameType        = "_context"
     val main: NameType                 = "main"
     val map: NameType                  = "map"
     val mirror : NameType              = "mirror"
@@ -373,7 +378,6 @@ trait StdNames extends NameManglers { self: SymbolTable =>
     val setSymbol: NameType            = "setSymbol"
     val setType: NameType              = "setType"
     val setTypeSignature: NameType     = "setTypeSignature"
-
     val synchronized_ : NameType       = "synchronized"
     val tail: NameType                 = "tail"
     val thisModuleType: NameType       = "thisModuleType"
