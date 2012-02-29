@@ -624,11 +624,21 @@ trait ContextErrors {
         setError(tree)
       }
 
-    // checkNoDoubleDefs...
-      def DefDefinedTwiceError(sym0: Symbol, sym1: Symbol) =
-        issueSymbolTypeError(sym0, sym1+" is defined twice"+
-                                   {if(!settings.debug.value) "" else " in "+context0.unit}+
-                                   {if (sym0.isMacro && sym1.isMacro) " \n(note that macros cannot be overloaded)" else ""})
+      // checkNoDoubleDefs...
+      // @PP: I hacked the filename in (context0.unit) to work around SI-4893.  It would be
+      // much better if every symbol could offer some idea of where it came from, else
+      // the obviously untrue claim that something has been defined twice can only frustrate.
+      // There's no direct test because partest doesn't work, but to reproduce, separately
+      // compile the next two lines:
+      //    package object foo { val x: Class[_] = null }
+      //    package foo
+      def DefDefinedTwiceError(sym0: Symbol, sym1: Symbol) = {
+        val isBug = sym0.isAbstractType && sym1.isAbstractType && (sym0.name startsWith "_$")
+        issueSymbolTypeError(sym0, sym1+" is defined twice in " + context0.unit
+          + ( if (sym0.isMacro && sym1.isMacro) "\n(note that macros cannot be overloaded)" else "" )
+          + ( if (isBug) "\n(this error is likely due to a bug in the scala compiler involving wildcards in package objects)" else "" )
+        )
+      }
 
       // cyclic errors
      def CyclicAliasingOrSubtypingError(errPos: Position, sym0: Symbol) =
@@ -636,11 +646,6 @@ trait ContextErrors {
 
      def CyclicReferenceError(errPos: Position, lockedSym: Symbol) =
        issueTypeError(PosAndMsgTypeError(errPos, "illegal cyclic reference involving " + lockedSym))
-       
-     def MacroExpandError(tree: Tree, t: Any) = { 
-       issueNormalTypeError(tree, "macros must return a compiler-specific tree; returned class is: " + t.getClass)
-       setError(tree)
-     }
     }
   }
 
@@ -713,10 +718,17 @@ trait ContextErrors {
           "constructor cannot be instantiated to expected type" + foundReqMsg(restpe, pt))
         setError(tree)
       }
-
-      def NoBestMethodAlternativeError(tree: Tree, argtpes: List[Type], pt: Type) =
+ 
+      def NoBestMethodAlternativeError(tree: Tree, argtpes: List[Type], pt: Type) = {
         issueNormalTypeError(tree,
           applyErrorMsg(tree, " cannot be applied to ", argtpes, pt))
+        // since inferMethodAlternative modifies the state of the tree 
+        // we have to set the type of tree to ErrorType only in the very last
+        // fallback action that is done in the inference (tracking it manually is error prone).
+        // This avoids entering infinite loop in doTypeApply.
+        // TODO: maybe we should do the same thing with inferExprAlternative.
+        if (implicitly[Context].reportErrors) setError(tree)
+      }
 
       def AmbiguousMethodAlternativeError(tree: Tree, pre: Type, best: Symbol,
             firstCompeting: Symbol, argtpes: List[Type], pt: Type) = {
