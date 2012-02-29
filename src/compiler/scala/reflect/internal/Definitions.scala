@@ -274,6 +274,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
       def Predef_identity = getMember(PredefModule, nme.identity)
       def Predef_conforms = getMember(PredefModule, nme.conforms)
       def Predef_wrapRefArray = getMember(PredefModule, nme.wrapRefArray)
+      def Predef_??? = getMember(PredefModule, nme.???)
       
     /** Is `sym` a member of Predef with the given name?
      *  Note: DON't replace this by sym == Predef_conforms/etc, as Predef_conforms is a `def`
@@ -687,7 +688,7 @@ trait Definitions extends reflect.api.StandardDefinitions {
     lazy val Object_ne = newMethod(ObjectClass, nme.ne, anyrefparam, booltype, FINAL)
     lazy val Object_isInstanceOf = newT1NoParamsMethod(ObjectClass, nme.isInstanceOf_Ob, FINAL | SYNTHETIC)(_ => booltype)
     lazy val Object_asInstanceOf = newT1NoParamsMethod(ObjectClass, nme.asInstanceOf_Ob, FINAL | SYNTHETIC)(_.typeConstructor)
-    lazy val Object_synchronized = newPolyMethod(1, ObjectClass, nme.synchronized_, FINAL)(tps => 
+    lazy val Object_synchronized = newPolyMethod(1, ObjectClass, nme.synchronized_, FINAL)(tps =>
       (Some(List(tps.head.typeConstructor)), tps.head.typeConstructor)
     )
     lazy val String_+ = newMethod(StringClass, nme.raw.PLUS, anyparam, stringtype, FINAL)
@@ -812,6 +813,9 @@ trait Definitions extends reflect.api.StandardDefinitions {
     def getModuleIfDefined(fullname: Name): Symbol =
       try getModule(fullname.toTermName)
       catch { case _: MissingRequirementError => NoSymbol }
+
+    def termMember(owner: Symbol, name: String): Symbol = owner.info.member(newTermName(name))
+    def typeMember(owner: Symbol, name: String): Symbol = owner.info.member(newTypeName(name))
 
     def getMember(owner: Symbol, name: Name): Symbol = {
       if (owner == NoSymbol) NoSymbol

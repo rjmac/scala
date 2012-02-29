@@ -94,11 +94,13 @@ trait StdNames extends NameManglers { self: SymbolTable =>
 
     val EMPTY: NameType              = ""
     val ANON_FUN_NAME: NameType      = "$anonfun"
+    val ANON_CLASS_NAME: NameType    = "$anon"
     val EMPTY_PACKAGE_NAME: NameType = "<empty>"
     val IMPORT: NameType             = "<import>"
     val MODULE_VAR_SUFFIX: NameType  = "$module"
     val ROOT: NameType               = "<root>"
     val PACKAGE: NameType            = "package"
+    val SPECIALIZED_SUFFIX: NameType = "$sp"
 
     // value types (and AnyRef) are all used as terms as well
     // as (at least) arguments to the @specialize annotation.
@@ -259,6 +261,8 @@ trait StdNames extends NameManglers { self: SymbolTable =>
       case _  => newTermName("x$" + i)
     }
     
+    val ??? = encode("???")
+    
     val wrapRefArray: NameType     = "wrapRefArray"
     val wrapByteArray: NameType    = "wrapByteArray"
     val wrapShortArray: NameType   = "wrapShortArray"
@@ -343,6 +347,7 @@ trait StdNames extends NameManglers { self: SymbolTable =>
     val isInstanceOf_ : NameType       = "isInstanceOf"
     val isInstanceOf_Ob : NameType     = "$isInstanceOf"
     val java: NameType                 = "java"
+    val key: NameType                  = "key"
     val lang: NameType                 = "lang"
     val length: NameType               = "length"
     val lengthCompare: NameType        = "lengthCompare"
@@ -439,7 +444,6 @@ trait StdNames extends NameManglers { self: SymbolTable =>
     protected implicit def createNameType(name: String): TypeName = newTypeNameCached(name)
 
     val REFINE_CLASS_NAME: NameType  = "<refinement>"
-    val ANON_CLASS_NAME: NameType    = "$anon"
   }
 
   /** For fully qualified type names.

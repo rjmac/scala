@@ -76,12 +76,14 @@ trait NameManglers {
     val PROTECTED_PREFIX              = "protected$"
     val PROTECTED_SET_PREFIX          = PROTECTED_PREFIX + "set"
     val SINGLETON_SUFFIX              = ".type"
-    val SPECIALIZED_SUFFIX_STRING     = "$sp"
     val SUPER_PREFIX_STRING           = "super$"
     val TRAIT_SETTER_SEPARATOR_STRING = "$_setter_$"
+    val SETTER_SUFFIX: TermName = encode("_=")
     
-    val SETTER_SUFFIX: TermName           = encode("_=")
-    val SPECIALIZED_SUFFIX_NAME: TermName = SPECIALIZED_SUFFIX_STRING
+    @deprecated("2.10.0", "Use SPECIALIZED_SUFFIX")
+    def SPECIALIZED_SUFFIX_STRING = SPECIALIZED_SUFFIX.toString
+    @deprecated("2.10.0", "Use SPECIALIZED_SUFFIX")
+    def SPECIALIZED_SUFFIX_NAME: TermName = SPECIALIZED_SUFFIX.toTermName
 
     def isConstructorName(name: Name)       = name == CONSTRUCTOR || name == MIXIN_CONSTRUCTOR
     def isExceptionResultName(name: Name)   = name startsWith EXCEPTION_RESULT_PREFIX
@@ -90,6 +92,7 @@ trait NameManglers {
     def isLocalName(name: Name)             = name endsWith LOCAL_SUFFIX_STRING
     def isLoopHeaderLabel(name: Name)       = (name startsWith WHILE_PREFIX) || (name startsWith DO_WHILE_PREFIX)
     def isProtectedAccessorName(name: Name) = name startsWith PROTECTED_PREFIX
+    def isSuperAccessorName(name: Name)     = name startsWith SUPER_PREFIX_STRING
     def isReplWrapperName(name: Name)       = name containsName INTERPRETER_IMPORT_WRAPPER
     def isSetterName(name: Name)            = name endsWith SETTER_SUFFIX
     def isTraitSetterName(name: Name)       = isSetterName(name) && (name containsName TRAIT_SETTER_SEPARATOR_STRING)
@@ -120,7 +123,7 @@ trait NameManglers {
     }
     
     def unspecializedName(name: Name): Name = (
-      if (name endsWith SPECIALIZED_SUFFIX_NAME)
+      if (name endsWith SPECIALIZED_SUFFIX)
         name.subName(0, name.lastIndexOf('m') - 1)
       else name
     )
@@ -140,8 +143,8 @@ trait NameManglers {
      *  and another one belonging to the enclosing class, on Double.
      */
     def splitSpecializedName(name: Name): (Name, String, String) =
-      if (name endsWith SPECIALIZED_SUFFIX_NAME) {
-        val name1 = name dropRight SPECIALIZED_SUFFIX_NAME.length
+      if (name endsWith SPECIALIZED_SUFFIX) {
+        val name1 = name dropRight SPECIALIZED_SUFFIX.length
         val idxC  = name1 lastIndexOf 'c'
         val idxM  = name1 lastIndexOf 'm'
 

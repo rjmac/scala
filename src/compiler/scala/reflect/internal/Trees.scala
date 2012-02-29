@@ -224,21 +224,23 @@ trait Trees extends api.Trees { self: SymbolTable =>
       LabelDef(sym.name.toTermName, params map Ident, rhs) setSymbol sym
     }
 
-
   /** casedef shorthand */
   def CaseDef(pat: Tree, body: Tree): CaseDef = CaseDef(pat, EmptyTree, body)
 
   def Bind(sym: Symbol, body: Tree): Bind =
     Bind(sym.name, body) setSymbol sym
 
-  /** 0-1 argument list new, based on a symbol.
-   */
-  def New(sym: Symbol, args: Tree*): Tree =
-    if (args.isEmpty) New(TypeTree(sym.tpe))
-    else New(TypeTree(sym.tpe), List(args.toList))
+  def Try(body: Tree, cases: (Tree, Tree)*): Try =
+    Try(body, cases.toList map { case (pat, rhs) => CaseDef(pat, EmptyTree, rhs) }, EmptyTree)
+
+  def Throw(tpe: Type, args: Tree*): Throw =
+    Throw(New(tpe, args: _*))
 
   def Apply(sym: Symbol, args: Tree*): Tree =
     Apply(Ident(sym), args.toList)
+
+  def New(sym: Symbol, args: Tree*): Tree =
+    New(sym.tpe, args: _*)
 
   def Super(sym: Symbol, mix: TypeName): Tree = Super(This(sym), mix)
 
@@ -271,7 +273,18 @@ trait Trees extends api.Trees { self: SymbolTable =>
     override def traverse(t: Tree) {
       if (t != EmptyTree && t.pos == NoPosition) {
         t.setPos(pos)
-        super.traverse(t) // TODO: bug? shouldn't the traverse be outside of the if?
+        super.traverse(t)   // TODO: bug? shouldn't the traverse be outside of the if?
+        // @PP: it's pruning whenever it encounters a node with a
+        // position, which I interpret to mean that (in the author's
+        // mind at least) either the children of a positioned node will
+        // already be positioned, or the children of a positioned node
+        // do not merit positioning.
+        //
+        // Whatever the author's rationale, it does seem like a bad idea
+        // to press on through a positioned node to find unpositioned
+        // children beneath it and then to assign whatever happens to
+        // be in `pos` to such nodes. There are supposed to be some
+        // position invariants which I can't imagine surviving that.
       }
     }
   }

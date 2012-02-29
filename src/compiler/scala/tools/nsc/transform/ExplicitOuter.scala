@@ -170,7 +170,7 @@ abstract class ExplicitOuter extends InfoTransform
       }
       if (!clazz.isTrait && !parents.isEmpty) {
         for (mc <- clazz.mixinClasses) {
-          val mixinOuterAcc: Symbol = atPhase(phase.next)(outerAccessor(mc))
+          val mixinOuterAcc: Symbol = afterExplicitOuter(outerAccessor(mc))
           if (mixinOuterAcc != NoSymbol) {
             if (decls1 eq decls) decls1 = decls.cloneScope
             val newAcc = mixinOuterAcc.cloneSymbol(clazz, mixinOuterAcc.flags & ~DEFERRED)
@@ -468,10 +468,12 @@ abstract class ExplicitOuter extends InfoTransform
             }
           }
           super.transform(
-            treeCopy.Template(tree, parents, self,
-                          if (newDefs.isEmpty) decls else decls ::: newDefs.toList)
+            deriveTemplate(tree)(decls => 
+              if (newDefs.isEmpty) decls
+              else decls ::: newDefs.toList
+            )
           )
-        case DefDef(mods, name, tparams, vparamss, tpt, rhs) =>
+        case DefDef(_, _, _, vparamss, _, rhs) =>
           if (sym.isClassConstructor) {
             rhs match {
               case Literal(_) =>
@@ -484,7 +486,7 @@ abstract class ExplicitOuter extends InfoTransform
                       sym.newValueParameter(nme.OUTER, sym.pos) setInfo outerField(clazz).info
                     ((ValDef(outerParam) setType NoType) :: vparamss.head) :: vparamss.tail
                   } else vparamss
-                super.transform(treeCopy.DefDef(tree, mods, name, tparams, vparamss1, tpt, rhs))
+                super.transform(copyDefDef(tree)(vparamss = vparamss1))
             }
           } else
             super.transform(tree)
@@ -559,7 +561,7 @@ abstract class ExplicitOuter extends InfoTransform
 
     /** The transformation method for whole compilation units */
     override def transformUnit(unit: CompilationUnit) {
-      atPhase(phase.next)(super.transformUnit(unit))
+      afterExplicitOuter(super.transformUnit(unit))
     }
   }
 
