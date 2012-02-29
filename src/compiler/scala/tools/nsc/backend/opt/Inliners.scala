@@ -466,8 +466,10 @@ abstract class Inliners extends SubComponent {
       }
     }
 
-    private def isHigherOrderMethod(sym: Symbol) =
-      sym.isMethod && atPhase(currentRun.erasurePhase.prev)(sym.info.paramTypes exists isFunctionType)
+    private def isHigherOrderMethod(sym: Symbol) = (
+         sym.isMethod
+      && beforeExplicitOuter(sym.info.paramTypes exists isFunctionType) // was "at erasurePhase.prev"
+    )
 
     /** Should method 'sym' being called in 'receiver' be loaded from disk? */
     def shouldLoadImplFor(sym: Symbol, receiver: Symbol): Boolean = {
@@ -550,9 +552,9 @@ abstract class Inliners extends SubComponent {
         val activeHandlers = caller.handlers filter (_ covered block)
 
         /* Map 'original' blocks to the ones inlined in the caller. */
-        val inlinedBlock: mutable.Map[BasicBlock, BasicBlock] = new mutable.HashMap
+        val inlinedBlock = mutable.Map[BasicBlock, BasicBlock]()
 
-        val varsInScope: mutable.Set[Local] = mutable.HashSet() ++= block.varsInScope
+        val varsInScope = mutable.HashSet[Local]() ++= block.varsInScope
 
         /** Side effects varsInScope when it sees SCOPE_ENTERs. */
         def instrBeforeFilter(i: Instruction): Boolean = {
@@ -705,7 +707,7 @@ abstract class Inliners extends SubComponent {
       }
 
       def isStampedForInlining(stackLength: Int) =
-        !sameSymbols && inc.m.hasCode && shouldInline && isSafeToInline(stackLength)
+        !sameSymbols && inc.m.hasCode && shouldInline && isSafeToInline(stackLength) && !inc.m.symbol.hasFlag(Flags.SYNCHRONIZED)
 
       def logFailure(stackLength: Int) = log(
         """|inline failed for %s:
